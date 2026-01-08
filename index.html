@@ -552,10 +552,10 @@
 
                     <h2>RULES</h2>
                     <ul>
-                        <li><strong>目的：</strong> 上段の組札エリアに、全ての図形を集めればクリア。</li>
-                        <li><strong>場札（下の列）：</strong> 「サイズが1つ小さい」かつ「切れ目の向きが90度違う」図形を重ねられます。</li>
-                        <li><strong>組札（上の枠）：</strong> 最小サイズから順に、サイズが大きくなるように、同じ向きで重ねます。</li>
-                        <li><strong>空の列：</strong> 最大サイズ（一番大きい図形：0.1）のみ移動できます。</li>
+                        <li><strong>目的：</strong> 上段の組札エリアに全ての環を集めればクリア</li>
+                        <li><strong>場札：</strong> サイズが1つ小さくて切れ目の向きが90度違う図形を重ねられます</li>
+                        <li><strong>組札：</strong> 最小サイズから順にサイズが大きくなるように同じ向きで重ねます</li>
+                        <li><strong>空列：</strong> 最大サイズのみ移動できます。</li>
                     </ul>
                 </div>
                 <button class="modal-close" onclick="closeOption()">CLOSE</button>
@@ -716,9 +716,9 @@
 
         function shareOnX() {
             const timeStr = formatTime(elapsedSeconds);
-            const text = `視力検査ソリティアをクリアしました！ タイム: ${timeStr} #視力検査ソリティア`;
+            const text = `視力検査ソリティア<\br>Time:${timeStr}<\br>#視力検査ソリティア`;
             const url = window.location.href;
-            const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}<\br>url=${encodeURIComponent(url)}`;
             window.open(intent, '_blank');
         }
 
@@ -1086,3 +1086,4 @@
 </body>
 
 </html>
+
