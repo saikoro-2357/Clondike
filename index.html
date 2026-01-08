@@ -743,10 +743,12 @@
                 dummy.onclick = dealCard;
                 stockEl.appendChild(dummy);
                 
-                // --- 山札カウンター ---
+                // --- 山札カウンター修正 ---
                 const countDiv = document.createElement('div');
                 countDiv.className = 'stock-count';
-                countDiv.innerText = deck.length;
+                // 見えている1枚を除いた枚数を表示（残り0なら表示なし）
+                const remaining = deck.length - 1;
+                countDiv.innerText = remaining > 0 ? remaining : "";
                 stockEl.appendChild(countDiv);
 
             } else {
@@ -842,7 +844,7 @@
             if (deck.length===0) return;
             pushHistory();
             
-            // --- 変更点: 設定に応じてめくる枚数を決定 ---
+            // --- 設定に応じてめくる枚数を決定 ---
             const drawCount = settings.draw3Mode ? 3 : 1;
             // Math.minを使うことで、残り枚数が2枚以下の場合も自動的に処理されます
             const count = Math.min(drawCount, deck.length);
