@@ -714,14 +714,16 @@
         }
         function closeClearModal() { document.getElementById('clearModal').style.display = 'none'; }
 
-        function shareOnX() {
+            function shareOnX() {
             const timeStr = formatTime(elapsedSeconds);
-            const text = `視力検査ソリティア<\br>Time:${timeStr}<\br>#視力検査ソリティア`;
+            // 改行には \n を使い、URLパラメータの区切りには & を使います
+            const text = `視力検査ソリティア\nTime:${timeStr} #視力検査ソリティア`;
             const url = window.location.href;
-            const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}<\br>url=${encodeURIComponent(url)}`;
+            
+            // textとurlを正しくエンコードして結合します
+            const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
             window.open(intent, '_blank');
-        }
-
+        } 
         function pushHistory() {
             const state = {
                 deck: JSON.parse(JSON.stringify(deck)),
@@ -1084,6 +1086,4 @@
         }
     </script>
 </body>
-
 </html>
-
