@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>視力検査表ソリティア</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* --- ライトモード（デフォルト） --- */
+            --bg-color: #eef2f6;
+            --card-surface: #ffffff;
+            --text-color: #222;
+            --sub-text-color: #555;
+            --border-color: #e0e0e0;
+            --divider-color: rgba(0, 0, 0, 0.08);
+            --highlight-color: #0066cc;
+            --back-color: #d5d5d5;
+            --slot-border: #ddd;
+            --modal-bg: #ffffff;
+            
+            /* --- ランク数字の色 --- */
+            --rank-text-color: #444; 
+
+            /* --- サイズ設定 (vmin) --- */
+            --base-size: 8vmin;
+            --v-spacing: 5.5vmin;
+            --gap-size: 1.5vmin;
+            --padding-size: 2vmin;
+        }
+
+        /* --- ダークモード定義 --- */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-surface: #1e1e1e;
+            --text-color: #e0e0e0;
+            --sub-text-color: #aaa;
+            --border-color: #333;
+            --divider-color: rgba(255, 255, 255, 0.08);
+            --highlight-color: #4da3ff;
+            --back-color: #444;
+            --slot-border: #444;
+            --modal-bg: #252525;
+            --rank-text-color: #ccc;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 1vmin;
+            box-sizing: border-box;
+            overflow: hidden;
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* メインボード */
+        .main-board {
+            background-color: var(--card-surface);
+            width: 100%;
+            height: 100%;
+            max-width: 1000px; 
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: var(--padding-size);
+            box-sizing: border-box;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+
+        h1 {
+            margin: 0 0 1vmin 0;
+            font-size: 2.5vmin;
+            letter-spacing: 0.05em;
+            text-align: center;
+            flex-shrink: 0;
+            color: var(--text-color);
+            line-height: 1.2;
+        }
+
+        .game-content {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: calc(var(--base-size) + 4vmin) 1fr;
+            gap: var(--gap-size);
+            overflow: hidden;
+            padding-bottom: 7vmin;
+        }
+
+        /* 共通パネルスタイル */
+        .panel {
+            border-radius: 8px;
+            padding: 1vmin;
+            display: flex;
+            position: relative;
+        }
+
+        .panel-stock {
+            flex-direction: column;
+            align-items: center;
+            gap: 4vmin;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .panel-tableau {
+            flex-direction: column;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 1vmin;
+            align-items: start;
+            padding-top: 0;
+            padding-right: 4vmin;
+        }
+
+        .label {
+            font-size: 1.2vmin; color: var(--sub-text-color); margin-bottom: 0.5vmin;
+            text-align: center; width: 100%; font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .waste-container {
+            position: relative;
+            width: var(--base-size);
+            flex-grow: 1;
+        }
+        
+        #waste .card {
+            border: none;
+            background-color: transparent;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .foundations-container {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: 1.5vmin;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tableau-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            overflow: visible;
+            border: none;
+            background: transparent;
+        }
+
+        .tableau-col {
+            position: relative;
+            flex: 1;
+            height: 100%;
+            border-right: 1px solid var(--divider-color);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .tableau-col:last-child { border-right: none; }
+
+        .empty-col-zone {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: calc((var(--base-size) - (var(--base-size) * 0.666)) / 2);
+            width: calc(var(--base-size) * 0.666);
+            height: calc(var(--base-size) * 0.666);
+            border: 2px dotted var(--sub-text-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: background 0.2s, border-color 0.2s;
+            opacity: 0.5;
+        }
+        .empty-col-zone:hover { 
+            background: rgba(0,0,0,0.03); 
+            border-color: var(--text-color);
+            opacity: 1;
+        }
+
+        .slot { width: var(--base-size); height: var(--base-size); position: relative; flex-shrink: 0; }
+        .stock-slot { border: 2px solid var(--slot-border); border-radius: 50%; cursor: pointer; }
+        .foundation-slot { position: relative; cursor: pointer; }
+
+        .foundation-bg {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            opacity: 0.05; 
+            pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+        }
+        [data-theme="dark"] .foundation-bg path { fill: #fff; }
+
+        /* カード */
+        .card {
+            width: var(--base-size); height: var(--base-size);
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: filter 0.2s;
+            z-index: 10;
+        }
+        
+        .card.static-pos { position: relative; left: auto; transform: none; }
+        
+        /* 選択時ハイライト */
+        .card.selected svg path { fill: var(--highlight-color); filter: drop-shadow(0 0.5vmin 1vmin rgba(0,102,204,0.3)); }
+        .card.selected[data-face="down"] svg path { fill: var(--highlight-color) !important; }
+        
+        .card.inactive { pointer-events: none; cursor: default; }
+        .card.inactive svg path { fill: var(--slot-border); }
+        
+        .card svg path { fill: var(--text-color); transition: fill 0.2s; }
+        .card .back-ring-path { fill: var(--back-color); fill-rule: evenodd; }
+
+        /* --- ランク表示（スイッチでON/OFF） --- */
+        .rank-number {
+            position: absolute;
+            left: 88%; 
+            top: 50%;
+            transform: translateY(-50%);
+            
+            font-family: Arial, sans-serif;
+            font-size: 1.8vmin; 
+            font-weight: bold;
+            color: var(--rank-text-color);
+            
+            opacity: 0; 
+            pointer-events: none;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+            text-shadow: 1px 1px 0 var(--card-surface), -1px -1px 0 var(--card-surface);
+        }
+        
+        body.show-rank .rank-number {
+            opacity: 1;
+        }
+        .card[data-face="down"] .rank-number {
+            display: none;
+        }
+
+        /* --- 組札エリアにあるカードの数字位置 --- */
+        .foundation-slot .card .rank-number {
+            left: 120%;
+        }
+
+        /* --- 山札カウンター --- */
+        .stock-count {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: Arial, sans-serif;
+            font-size: 4.0vmin;
+            font-weight: bold;
+            color: #777; 
+            pointer-events: none; 
+            z-index: 20;
+        }
+
+        /* --- コントロールボタン --- */
+        .footer-controls {
+            position: absolute;
+            bottom: var(--padding-size);
+            left: 0;
+            width: 100%;
+            padding: 0 var(--padding-size);
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        .ctrl-group {
+            display: flex;
+            gap: 1.5vmin;
+            pointer-events: auto;
+        }
+
+        .btn {
+            color: #fff;
+            border: none;
+            padding: 1.2vmin 0;
+            width: 14vmin;
+            font-size: 2vmin;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transition: background 0.2s, transform 0.1s;
+            text-align: center;
+        }
+        .btn:active { transform: translateY(1px); }
+
+        .btn-rules { background: #666; }
+        .btn-rules:hover { background: #555; }
+
+        .btn-undo { background: #28a745; }
+        .btn-undo:hover { background: #218838; }
+
+        .btn-reset { background: #dc3545; }
+        .btn-reset:hover { background: #c82333; }
+
+        .btn:disabled { background: #999; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* --- モーダル & 設定スイッチ --- */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+        .modal-content {
+            background: var(--modal-bg); 
+            border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 4vmin; max-width: 80vmin; width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            color: var(--text-color);
+        }
+        .modal-content h2 { 
+            margin-top: 0; font-size: 2.2vmin; 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 1vmin; margin-bottom: 2vmin;
+        }
+        .modal-content ul { 
+            padding-left: 2.5vmin; font-size: 1.6vmin; 
+            line-height: 2; color: var(--sub-text-color); 
+            margin-bottom: 3vmin;
+        }
+
+        /* スイッチ行 */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2vmin;
+            font-size: 2vmin;
+            font-weight: bold;
+            padding: 0 1vmin;
+        }
+
+        /* トグルスイッチのスタイル */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 6vmin;
+            height: 3.4vmin;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 3.4vmin;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 2.6vmin;
+            width: 2.6vmin;
+            left: 0.4vmin;
+            bottom: 0.4vmin;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--highlight-color); }
+        input:focus + .slider { box-shadow: 0 0 1px var(--highlight-color); }
+        input:checked + .slider:before { transform: translateX(2.6vmin); }
+
+
+        .modal-close {
+            display: block; margin: 3vmin auto 0; padding: 1.5vmin 4vmin;
+            background: var(--text-color); color: var(--bg-color); 
+            border: none; border-radius: 20px; cursor: pointer; 
+            font-size: 1.8vmin; font-weight: bold;
+        }
+
+        /* --- スマホ対応 --- */
+        @media (max-width: 768px) {
+            :root {
+                --base-size: 10vmin;
+                --v-spacing: 7vmin;
+            }
+            .main-board {
+                padding: 1.5vmin;
+                max-width: 100%;
+            }
+            h1 { font-size: 4vmin; margin-bottom: 1.5vmin; }
+            .game-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                gap: 2vmin;
+            }
+            .panel-stock {
+                flex-direction: row;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                justify-content: flex-start;
+                gap: 4vmin;
+                padding-bottom: 2vmin;
+                padding-left: 2vmin;
+                overflow-x: auto;
+            }
+            .waste-container {
+                width: calc((var(--base-size) * 3) + 4vmin); 
+                height: var(--base-size); 
+                flex-grow: 0; flex-shrink: 0;
+            }
+            .btn { font-size: 3.5vmin; width: 22vmin; }
+            .label { display: none; }
+            .modal-content ul { font-size: 3.5vmin; }
+            .modal-close { font-size: 3.5vmin; }
+            
+            .rank-number { font-size: 3.0vmin; }
+            .stock-count { font-size: 4vmin; } 
+            
+            .setting-row { font-size: 3.5vmin; }
+            .switch { width: 10vmin; height: 5.5vmin; }
+            .slider:before { height: 4.5vmin; width: 4.5vmin; left: 0.5vmin; bottom: 0.5vmin; }
+            input:checked + .slider:before { transform: translateX(4.5vmin); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-board">
+        <h1>視力検査表ソリティア</h1>
+
+        <div class="game-content">
+            <div class="panel panel-stock">
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div class="label">STOCK</div>
+                    <div id="stock" class="slot stock-slot"></div>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div class="label">FLIPED</div>
+                    <div id="waste" class="waste-container"></div>
+                </div>
+            </div>
+
+            <div class="panel panel-tableau">
+                <div id="foundations" class="foundations-container"></div>
+                <div id="tableau" class="tableau-container"></div>
+            </div>
+        </div>
+
+        <div class="footer-controls">
+            <div class="ctrl-group">
+                <button class="btn btn-rules" onclick="showOption()">OPTION</button>
+            </div>
+            <div class="ctrl-group">
+                <button id="undoBtn" class="btn btn-undo" onclick="undoMove()">UNDO</button>
+                <button class="btn btn-reset" onclick="confirmReset()">RESET</button>
+            </div>
+        </div>
+
+        <div id="optionModal" class="modal-overlay">
+            <div class="modal-content">
+                <h2>SETTINGS</h2>
+                
+                <div class="setting-row">
+                    <span>ダークモード</span>
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-row">
+                    <span>ランクを表示</span>
+                    <label class="switch">
+                        <input type="checkbox" id="rankToggle" onchange="toggleRankMode()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <span>3枚めくり</span>
+                    <label class="switch">
+                        <input type="checkbox" id="draw3Toggle" onchange="toggleDraw3Mode()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <h2>RULES</h2>
+                <ul>
+                    <li><strong>目的：</strong> 上段の組札エリアに、全ての図形を集めればクリア。</li>
+                    <li><strong>場札（下の列）：</strong> 「サイズが1つ小さい」かつ「切れ目の向きが90度違う」図形を重ねられます。</li>
+                    <li><strong>組札（上の枠）：</strong> 最小サイズから順に、サイズが大きくなるように、同じ向きで重ねます。</li>
+                    <li><strong>空の列：</strong> 最大サイズ（一番大きい図形：0.1）のみ移動できます。</li>
+                </ul>
+                <button class="modal-close" onclick="closeOption()">CLOSE</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 設定 (左:180, 下:90, 上:270, 右:0) ---
+        const ANGLES = [180, 90, 270, 0];
+        
+        const SIZE_RATIOS = [
+            2/3, 1/2, 1/3, 1/4, 1/5, 1/6, 1/7, 1/8, 1/9, 1/10, 1/12, 1/15, 1/20
+        ];
+        
+        // --- ランクに対応する視力数値 ---
+        const RANK_LABELS = [
+            "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.2", "1.5", "2.0"
+        ];
+
+        const BACK_RATIO = SIZE_RATIOS[0];
+        const STORAGE_KEY = 'eyesight_solitaire_state_v5'; // バージョンアップ
+
+        const PATHS = {
+            landolt: (() => {
+                const Ro=2.5, Ri=1.5, w=0.5;
+                const to=Math.asin(w/Ro), ti=Math.asin(w/Ri);
+                const c=Math.cos, s=Math.sin;
+                let d = `M ${Ro*c(to)},${Ro*s(to)} A ${Ro} ${Ro} 0 1 1 ${Ro*c(-to)},${Ro*s(-to)} `;
+                d += `L ${Ri*c(-ti)},${Ri*s(-ti)} A ${Ri} ${Ri} 0 1 0 ${Ri*c(ti)},${Ri*s(ti)} Z`;
+                return d;
+            })(),
+            closedRing: (() => {
+                const Ro=2.5, Ri=1.5;
+                let d = `M 0,-${Ro} A ${Ro} ${Ro} 0 1 1 0,${Ro} A ${Ro} ${Ro} 0 1 1 0,-${Ro} `;
+                d += `M 0,-${Ri} A ${Ri} ${Ri} 0 1 0 0,${Ri} A ${Ri} ${Ri} 0 1 0 0,-${Ri} Z`;
+                return d;
+            })()
+        };
+
+        let deck=[], waste=[], foundations=[[],[],[],[]], tableau=[[],[],[],[],[],[],[]];
+        let historyStack = [];
+        let selected = null;
+        
+        // 設定用変数
+        let settings = {
+            darkMode: false,
+            showRank: false,
+            draw3Mode: true // デフォルトは3枚めくり
+        };
+
+        function initGame() {
+            selected = null;
+            historyStack = [];
+            deck = [];
+            for (let r=0; r<13; r++) {
+                for (let a of ANGLES) {
+                    deck.push({ rank: r, angle: a, faceUp: false, id: Math.random().toString(36).substr(2,9) });
+                }
+            }
+            for (let i=deck.length-1; i>0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            waste = []; foundations = [[],[],[],[]]; tableau = [[],[],[],[],[],[],[]];
+            let cardIdx = 0;
+            for (let i=0; i<7; i++) {
+                for (let j=0; j<=i; j++) {
+                    let c = deck[cardIdx++];
+                    if (j===i) c.faceUp = true;
+                    tableau[i].push(c);
+                }
+            }
+            deck = deck.slice(cardIdx);
+            saveGame();
+            renderBoard();
+        }
+
+        function confirmReset() {
+            if(confirm("ゲームをリセットして最初から始めますか？")) {
+                initGame();
+            }
+        }
+
+        function pushHistory() {
+            const state = {
+                deck: JSON.parse(JSON.stringify(deck)),
+                waste: JSON.parse(JSON.stringify(waste)),
+                foundations: JSON.parse(JSON.stringify(foundations)),
+                tableau: JSON.parse(JSON.stringify(tableau))
+            };
+            historyStack.push(state);
+            if (historyStack.length > 50) historyStack.shift();
+        }
+
+        function undoMove() {
+            if (historyStack.length === 0) return;
+            const prev = historyStack.pop();
+            deck = prev.deck;
+            waste = prev.waste;
+            foundations = prev.foundations;
+            tableau = prev.tableau;
+            selected = null;
+            saveGame();
+            renderBoard();
+        }
+
+        function saveGame() {
+            const data = {
+                deck, waste, foundations, tableau, historyStack, settings
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch(e) { console.error("Save failed", e); }
+        }
+
+        function loadGame() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    deck = parsed.deck;
+                    waste = parsed.waste;
+                    foundations = parsed.foundations;
+                    tableau = parsed.tableau;
+                    historyStack = parsed.historyStack || [];
+                    
+                    if(parsed.settings) {
+                        settings = parsed.settings;
+                        // 新しい設定項目の互換性チェック
+                        if (settings.draw3Mode === undefined) settings.draw3Mode = true;
+                        applySettings();
+                    }
+                    return true;
+                } catch(e) {
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // --- 設定関連機能 ---
+        function toggleDarkMode() {
+            settings.darkMode = document.getElementById('darkModeToggle').checked;
+            applySettings();
+            saveGame();
+        }
+
+        function toggleRankMode() {
+            settings.showRank = document.getElementById('rankToggle').checked;
+            applySettings();
+            saveGame();
+        }
+
+        function toggleDraw3Mode() {
+            settings.draw3Mode = document.getElementById('draw3Toggle').checked;
+            applySettings();
+            saveGame();
+        }
+
+        function applySettings() {
+            // ダークモード適用
+            if (settings.darkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            document.getElementById('darkModeToggle').checked = settings.darkMode;
+
+            // ランク表示適用
+            if (settings.showRank) {
+                document.body.classList.add('show-rank');
+            } else {
+                document.body.classList.remove('show-rank');
+            }
+            document.getElementById('rankToggle').checked = settings.showRank;
+
+            // 3枚めくり適用（UI反映）
+            document.getElementById('draw3Toggle').checked = settings.draw3Mode;
+        }
+
+        function createCardEl(card) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.dataset.id = card.id;
+            div.dataset.face = card.faceUp ? "up" : "down";
+            
+            let isSelected = false;
+            if (selected) {
+                if (selected.stack.some(c => c.id === card.id)) {
+                    isSelected = true;
+                }
+            }
+            if (isSelected) div.classList.add('selected');
+
+            // --- ランク表示用要素 ---
+            const rankSpan = document.createElement('span');
+            rankSpan.className = 'rank-number';
+            rankSpan.innerText = RANK_LABELS[card.rank];
+            div.appendChild(rankSpan);
+
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("viewBox", "-2.5 -2.5 5 5");
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            if (card.faceUp) {
+                svg.style.transform = `rotate(${card.angle}deg)`;
+                path.setAttribute("d", PATHS.landolt);
+                path.setAttribute("transform", `scale(${SIZE_RATIOS[card.rank]})`);
+            } else {
+                path.setAttribute("d", PATHS.closedRing);
+                path.classList.add("back-ring-path");
+                path.setAttribute("fill-rule", "evenodd");
+                path.setAttribute("transform", `scale(${BACK_RATIO})`);
+            }
+            svg.appendChild(path);
+            div.appendChild(svg);
+            return div;
+        }
+
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+
+        function renderBoard() {
+            document.getElementById('undoBtn').disabled = (historyStack.length === 0);
+
+            const stockEl = document.getElementById('stock'); stockEl.innerHTML = '';
+            if (deck.length > 0) {
+                const dummy = createCardEl({rank:0, angle:0, faceUp:false});
+                dummy.classList.add('static-pos'); 
+                dummy.onclick = dealCard;
+                stockEl.appendChild(dummy);
+                
+                // --- 山札カウンター ---
+                const countDiv = document.createElement('div');
+                countDiv.className = 'stock-count';
+                countDiv.innerText = deck.length;
+                stockEl.appendChild(countDiv);
+
+            } else {
+                stockEl.onclick = recycleWaste;
+                stockEl.innerHTML = '<div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:2.5vmin;color:var(--slot-border);cursor:pointer;">↺</div>';
+            }
+
+            const wasteEl = document.getElementById('waste'); wasteEl.innerHTML = '';
+            // 捨て札の表示枚数（常に3枚まで表示するのはクロンダイクの通例）
+            const maxWaste = 3; 
+            const showCount = Math.min(maxWaste, waste.length);
+            
+            for (let i=0; i<showCount; i++) {
+                const idx = waste.length - showCount + i;
+                const card = waste[idx];
+                const el = createCardEl(card);
+                el.style.position = 'absolute';
+                el.style.left = 'auto'; 
+                el.style.transform = 'none';
+                
+                if (!isMobile()) {
+                    el.style.top = `calc(${i} * var(--v-spacing))`;
+                } else {
+                    el.style.top = '0';
+                    el.style.left = `calc(${i} * (var(--base-size) + 1vmin))`;
+                }
+                
+                if (i < showCount - 1) el.classList.add('inactive');
+                else el.onclick = () => handleCardClick({ type: 'waste', card: card });
+                wasteEl.appendChild(el);
+            }
+
+            const fContainer = document.getElementById('foundations'); fContainer.innerHTML = '';
+            ANGLES.forEach((angle, i) => {
+                const slot = document.createElement('div');
+                slot.className = 'slot foundation-slot';
+                
+                const bgSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                bgSvg.setAttribute("viewBox", "-2.5 -2.5 5 5");
+                bgSvg.style.transform = `rotate(${angle}deg)`;
+                bgSvg.classList.add('foundation-bg');
+                const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                p.setAttribute("d", PATHS.landolt);
+                p.setAttribute("transform", `scale(${SIZE_RATIOS[0] * 1.5})`);
+                bgSvg.appendChild(p);
+                slot.appendChild(bgSvg);
+
+                if (foundations[i].length > 0) {
+                    const top = foundations[i][foundations[i].length - 1];
+                    const el = createCardEl(top);
+                    el.style.top = '0';
+                    el.onclick = (e) => { e.stopPropagation(); handleTargetClick({ type:'foundation', fIdx:i }); };
+                    slot.appendChild(el);
+                }
+                slot.onclick = () => handleTargetClick({ type:'foundation', fIdx:i });
+                fContainer.appendChild(slot);
+            });
+
+            const tContainer = document.getElementById('tableau'); tContainer.innerHTML = '';
+            tableau.forEach((col, cIdx) => {
+                const colEl = document.createElement('div');
+                colEl.className = 'tableau-col';
+                if (col.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-col-zone';
+                    empty.onclick = () => handleTargetClick({ type:'tableau', cIdx:cIdx, rIdx:-1 });
+                    colEl.appendChild(empty);
+                } else {
+                    col.forEach((card, rIdx) => {
+                        const el = createCardEl(card);
+                        el.style.top = `calc(${rIdx} * var(--v-spacing))`;
+                        
+                        if (card.faceUp) {
+                            el.onclick = (e) => {
+                                e.stopPropagation();
+                                if (selected && selected.card.id !== card.id) handleTargetClick({ type:'tableau', cIdx, rIdx, card });
+                                else handleCardClick({ type:'tableau', cIdx, rIdx, card });
+                            };
+                        } else {
+                            el.onclick = (e) => e.stopPropagation();
+                        }
+                        colEl.appendChild(el);
+                    });
+                }
+                tContainer.appendChild(colEl);
+            });
+            checkWin();
+        }
+
+        window.addEventListener('resize', renderBoard);
+
+        function dealCard() {
+            if (deck.length===0) return;
+            pushHistory();
+            
+            // --- 変更点: 設定に応じてめくる枚数を決定 ---
+            const drawCount = settings.draw3Mode ? 3 : 1;
+            // Math.minを使うことで、残り枚数が2枚以下の場合も自動的に処理されます
+            const count = Math.min(drawCount, deck.length);
+            
+            for(let i=0; i<count; i++){ 
+                const c=deck.pop(); 
+                c.faceUp=true; 
+                waste.push(c); 
+            }
+            selected=null; 
+            saveGame();
+            renderBoard();
+        }
+
+        function recycleWaste() {
+            if (deck.length>0 || waste.length===0) return;
+            pushHistory();
+            while(waste.length>0) { const c=waste.pop(); c.faceUp=false; deck.push(c); }
+            selected=null; 
+            saveGame();
+            renderBoard();
+        }
+        function handleCardClick(info) {
+            if (selected && selected.card.id === info.card.id) {
+                selected=null; renderBoard(); return;
+            }
+            let stack=[];
+            if (info.type==='waste') stack=[info.card];
+            else if (info.type==='tableau') stack=tableau[info.cIdx].slice(info.rIdx);
+            else return;
+            selected = { ...info, stack: stack };
+            renderBoard();
+        }
+        function handleTargetClick(tInfo) {
+            if (!selected) return;
+            const head = selected.stack[0]; let success=false;
+            if (tInfo.type==='foundation' && selected.stack.length===1) {
+                const fStack = foundations[tInfo.fIdx];
+                if (head.angle === ANGLES[tInfo.fIdx]) {
+                    if (fStack.length===0) { if(head.rank===12) success=true; }
+                    else { if(head.rank === fStack[fStack.length-1].rank - 1) success=true; }
+                }
+                if(success) executeMove('foundation', tInfo.fIdx);
+            } else if (tInfo.type==='tableau') {
+                const tStack = tableau[tInfo.cIdx];
+                if (tStack.length===0) { if(head.rank===0) success=true; }
+                else {
+                    const top = tStack[tStack.length-1];
+                    const diff = Math.abs(head.angle - top.angle);
+                    if ((head.rank === top.rank + 1) && (diff===90 || diff===270)) success=true;
+                }
+                if(success) executeMove('tableau', tInfo.cIdx);
+            }
+            if (success) { selected=null; renderBoard(); }
+        }
+        function executeMove(destType, destIdx) {
+            pushHistory();
+            let items=[];
+            if (selected.type==='waste') items.push(waste.pop());
+            else if (selected.type==='tableau') {
+                const srcCol = tableau[selected.cIdx];
+                items = srcCol.splice(selected.rIdx);
+                if(srcCol.length>0) srcCol[srcCol.length-1].faceUp=true;
+            }
+            if(destType==='foundation') foundations[destIdx].push(...items);
+            else if(destType==='tableau') tableau[destIdx].push(...items);
+            saveGame();
+        }
+        function checkWin() {
+            let count=0; for(let f of foundations) if(f.length===13) count++;
+            if(count===4) {
+                setTimeout(()=>alert("Clear!"),100);
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+
+        function showOption() { document.getElementById('optionModal').style.display = 'flex'; }
+        function closeOption() { document.getElementById('optionModal').style.display = 'none'; }
+
+        // 初期化
+        if (!loadGame()) {
+            initGame();
+        } else {
+            renderBoard();
+        }
+    </script>
+</body>
+</html>
