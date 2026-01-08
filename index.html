@@ -422,7 +422,8 @@
                 overflow-x: auto;
             }
             .waste-container {
-                width: calc((var(--base-size) * 3) + 4vmin); 
+                /* --- 修正: カード間隔を広げるため、コンテナの幅も拡張 --- */
+                width: calc((var(--base-size) * 3) + 12vmin); 
                 height: var(--base-size); 
                 flex-grow: 0; flex-shrink: 0;
             }
@@ -751,7 +752,6 @@
                 // --- 山札カウンター ---
                 const countDiv = document.createElement('div');
                 countDiv.className = 'stock-count';
-                // 空の枠ステップが入ったので、数字は「現在のカード総数」に戻すのが自然
                 countDiv.innerText = deck.length;
                 stockEl.appendChild(countDiv);
 
@@ -791,7 +791,8 @@
                     el.style.top = `calc(${i} * var(--v-spacing))`;
                 } else {
                     el.style.top = '0';
-                    el.style.left = `calc(${i} * (var(--base-size) + 1vmin))`;
+                    // --- 修正: モバイル時の横間隔を 1vmin -> 4vmin に拡大 ---
+                    el.style.left = `calc(${i} * (var(--base-size) + 4vmin))`;
                 }
                 
                 if (i < showCount - 1) el.classList.add('inactive');
@@ -951,4 +952,3 @@
 </body>
 
 </html>
-
