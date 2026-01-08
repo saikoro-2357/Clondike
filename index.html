@@ -552,6 +552,8 @@
         let deck=[], waste=[], foundations=[[],[],[],[]], tableau=[[],[],[],[],[],[],[]];
         let historyStack = [];
         let selected = null;
+        // 「空の状態」を確認したかどうかのフラグ
+        let showResetBtn = false;
         
         // 設定用変数
         let settings = {
@@ -563,6 +565,7 @@
         function initGame() {
             selected = null;
             historyStack = [];
+            showResetBtn = false;
             deck = [];
             for (let r=0; r<13; r++) {
                 for (let a of ANGLES) {
@@ -598,7 +601,8 @@
                 deck: JSON.parse(JSON.stringify(deck)),
                 waste: JSON.parse(JSON.stringify(waste)),
                 foundations: JSON.parse(JSON.stringify(foundations)),
-                tableau: JSON.parse(JSON.stringify(tableau))
+                tableau: JSON.parse(JSON.stringify(tableau)),
+                showResetBtn: showResetBtn // 状態保存
             };
             historyStack.push(state);
             if (historyStack.length > 50) historyStack.shift();
@@ -611,6 +615,7 @@
             waste = prev.waste;
             foundations = prev.foundations;
             tableau = prev.tableau;
+            showResetBtn = prev.showResetBtn || false; // 復元
             selected = null;
             saveGame();
             renderBoard();
@@ -618,7 +623,7 @@
 
         function saveGame() {
             const data = {
-                deck, waste, foundations, tableau, historyStack, settings
+                deck, waste, foundations, tableau, historyStack, settings, showResetBtn
             };
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -635,10 +640,10 @@
                     foundations = parsed.foundations;
                     tableau = parsed.tableau;
                     historyStack = parsed.historyStack || [];
+                    showResetBtn = parsed.showResetBtn || false;
                     
                     if(parsed.settings) {
                         settings = parsed.settings;
-                        // 新しい設定項目の互換性チェック
                         if (settings.draw3Mode === undefined) settings.draw3Mode = true;
                         applySettings();
                     }
@@ -670,7 +675,6 @@
         }
 
         function applySettings() {
-            // ダークモード適用
             if (settings.darkMode) {
                 document.documentElement.setAttribute('data-theme', 'dark');
             } else {
@@ -678,15 +682,12 @@
             }
             document.getElementById('darkModeToggle').checked = settings.darkMode;
 
-            // ランク表示適用
             if (settings.showRank) {
                 document.body.classList.add('show-rank');
             } else {
                 document.body.classList.remove('show-rank');
             }
             document.getElementById('rankToggle').checked = settings.showRank;
-
-            // 3枚めくり適用（UI反映）
             document.getElementById('draw3Toggle').checked = settings.draw3Mode;
         }
 
@@ -737,27 +738,44 @@
             document.getElementById('undoBtn').disabled = (historyStack.length === 0);
 
             const stockEl = document.getElementById('stock'); stockEl.innerHTML = '';
+            
             if (deck.length > 0) {
+                // 山札がある場合
+                showResetBtn = false; // リセットボタンフラグをオフに
+                
                 const dummy = createCardEl({rank:0, angle:0, faceUp:false});
                 dummy.classList.add('static-pos'); 
                 dummy.onclick = dealCard;
                 stockEl.appendChild(dummy);
                 
-                // --- 山札カウンター修正 ---
+                // --- 山札カウンター ---
                 const countDiv = document.createElement('div');
                 countDiv.className = 'stock-count';
-                // 見えている1枚を除いた枚数を表示（残り0なら表示なし）
-                const remaining = deck.length - 1;
-                countDiv.innerText = remaining > 0 ? remaining : "";
+                // 空の枠ステップが入ったので、数字は「現在のカード総数」に戻すのが自然
+                countDiv.innerText = deck.length;
                 stockEl.appendChild(countDiv);
 
             } else {
-                stockEl.onclick = recycleWaste;
-                stockEl.innerHTML = '<div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:2.5vmin;color:var(--slot-border);cursor:pointer;">↺</div>';
+                // 山札が空の場合
+                if (!showResetBtn) {
+                    // 1. まず「空の状態（枠のみ）」を表示
+                    stockEl.style.cursor = 'pointer';
+                    // 誤操作防止のため、ここをクリックして初めてリセットボタンが出るようにする
+                    stockEl.onclick = () => { 
+                        showResetBtn = true; 
+                        saveGame();
+                        renderBoard(); 
+                    };
+                    // 視覚的には空っぽ（枠線のみ）
+                    stockEl.innerHTML = ''; 
+                } else {
+                    // 2. 既にクリック済みなら「リセットボタン」を表示
+                    stockEl.onclick = recycleWaste;
+                    stockEl.innerHTML = '<div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:4vmin;color:#777;cursor:pointer;">0</div>';
+                }
             }
 
             const wasteEl = document.getElementById('waste'); wasteEl.innerHTML = '';
-            // 捨て札の表示枚数（常に3枚まで表示するのはクロンダイクの通例）
             const maxWaste = 3; 
             const showCount = Math.min(maxWaste, waste.length);
             
@@ -844,9 +862,7 @@
             if (deck.length===0) return;
             pushHistory();
             
-            // --- 設定に応じてめくる枚数を決定 ---
             const drawCount = settings.draw3Mode ? 3 : 1;
-            // Math.minを使うことで、残り枚数が2枚以下の場合も自動的に処理されます
             const count = Math.min(drawCount, deck.length);
             
             for(let i=0; i<count; i++){ 
@@ -863,7 +879,8 @@
             if (deck.length>0 || waste.length===0) return;
             pushHistory();
             while(waste.length>0) { const c=waste.pop(); c.faceUp=false; deck.push(c); }
-            selected=null; 
+            selected=null;
+            showResetBtn = false; // リセット後はフラグを戻す
             saveGame();
             renderBoard();
         }
