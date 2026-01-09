@@ -101,7 +101,6 @@
         /* タイマー表示 */
         .timer-display {
             font-size: 2.5vmin;
-            /* --- 変更: フォントをArialに変更 --- */
             font-family: Arial, sans-serif;
             font-weight: bold;
             color: var(--sub-text-color);
@@ -134,7 +133,7 @@
         .panel-tableau {
             flex-direction: column;
             display: grid;
-            grid-template-rows: auto 1fr;
+            grid-template-rows: auto auto 1fr;
             gap: 1vmin;
             align-items: start;
             padding-top: 0;
@@ -158,6 +157,19 @@
             background-color: transparent;
             border-radius: 8px;
             box-sizing: border-box;
+        }
+
+        /* --- 組札の順番ガイド用スタイル --- */
+        .foundation-guide {
+            width: 100%;
+            text-align: center;
+            font-size: 1.5vmin;
+            color: var(--sub-text-color);
+            margin-bottom: 0.5vmin;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            opacity: 0.8;
+            white-space: nowrap;
         }
 
         .foundations-container {
@@ -482,6 +494,8 @@
             .switch { width: 10vmin; height: 5.5vmin; }
             .slider:before { height: 4.5vmin; width: 4.5vmin; left: 0.5vmin; bottom: 0.5vmin; }
             input:checked + .slider:before { transform: translateX(4.5vmin); }
+            
+            .foundation-guide { font-size: 3vmin; margin-bottom: 1vmin; }
         }
 
     </style>
@@ -507,6 +521,10 @@
             </div>
 
             <div class="panel panel-tableau">
+                <div class="foundation-guide">
+                    2.0&rarr;1.5&rarr;1.2&rarr;1.0&rarr;0.9&rarr;0.8&rarr;0.7&rarr;0.6&rarr;0.5&rarr;0.4&rarr;0.3&rarr;0.2&rarr;0.1
+                </div>
+
                 <div id="foundations" class="foundations-container"></div>
                 <div id="tableau" class="tableau-container"></div>
             </div>
@@ -522,9 +540,25 @@
             </div>
         </div>
 
+        <div id="welcomeModal" class="modal-overlay">
+            <div class="modal-content">
+                <h2>視力検査ソリティア</h2>
+                <div class="settings-list" style="text-align:left;">
+                    <p style="text-align:center; font-weight:bold; margin-bottom:2vmin; color:var(--text-color);">やってると眼がおかしくなるゲーム</p>
+                    <ul>
+                        <li><strong>目的：</strong> 上部の組札エリアに全ての環を集めればクリアです</li>
+                        <li><strong>組札：</strong> 同じ向きで2.0の環から0.1の環の順に重ねます</li>
+                        <li><strong>場札：</strong> サイズが1つ小さくて向きが90度違う環を重ねられます</li>
+                        <li><strong>空列：</strong> 0.1の環のみ配置することが出来ます</li>
+                    </ul>
+                </div>
+                <button class="modal-btn-group btn btn-primary" style="margin:2vmin auto 0; width:20vmin;" onclick="closeWelcomeModal()">GAME START</button>
+            </div>
+        </div>
+
         <div id="optionModal" class="modal-overlay">
             <div class="modal-content">
-                <h2>SETTINGS</h2>
+                <h2>OPTIONS</h2>
                 <div class="settings-list">
                     <div class="setting-row">
                         <span>ダークモード</span>
@@ -535,7 +569,7 @@
                     </div>
                     
                     <div class="setting-row">
-                        <span>ランクを表示</span>
+                        <span>ランク数を表示</span>
                         <label class="switch">
                             <input type="checkbox" id="rankToggle" onchange="toggleRankMode()">
                             <span class="slider round"></span>
@@ -552,20 +586,23 @@
 
                     <h2>RULES</h2>
                     <ul>
-                        <li><strong>目的：</strong> 上段の組札エリアに全ての環を集めればクリア</li>
-                        <li><strong>場札：</strong> サイズが1つ小さくて切れ目の向きが90度違う図形を重ねられます</li>
-                        <li><strong>組札：</strong> 最小サイズから順にサイズが大きくなるように同じ向きで重ねます</li>
-                        <li><strong>空列：</strong> 最大サイズのみ移動できます。</li>
+                        <li><strong>目的：</strong> 上部の組札エリアに全ての環を集めればクリアです</li>
+                        <li><strong>場札：</strong> 同じ向きで2.0の環から0.1の環の順に重ねます</li>
+                        <li><strong>組札：</strong> サイズが1つ小さくて向きが90度違う環を重ねられます</li>
+                        <li><strong>空列：</strong>  0.1の環のみ配置することが出来ます</li>
                     </ul>
                 </div>
                 <button class="modal-close" onclick="closeOption()">CLOSE</button>
+                <div style="margin-top:2vmin; font-size:1.5vmin; color:var(--sub-text-color); opacity:0.6;">
+                    2026 &copy;saikoro2357
+                </div>
             </div>
         </div>
 
         <div id="resetModal" class="modal-overlay">
             <div class="modal-content">
                 <h2>RESET GAME?</h2>
-                <p>現在のゲームを終了して、<br>最初からやり直しますか？</p>
+                <p>現在のゲームを終了し<br>最初からやり直しますか？</p>
                 <div class="modal-btn-group">
                     <button class="btn btn-rules" onclick="closeResetModal()">CANCEL</button>
                     <button class="btn btn-reset" onclick="confirmReset()">RESET</button>
@@ -576,7 +613,7 @@
         <div id="clearModal" class="modal-overlay">
             <div class="modal-content">
                 <h2>CLEAR!</h2>
-                <p>目がいい！</p>
+                <p>眼がいい！</p>
                 <p style="font-weight:bold; font-size:2.5vmin;">Time: <span id="clearTimeDisplay">00:00</span></p>
                 <div class="modal-btn-group" style="flex-direction:column; align-items:center;">
                     <button class="btn btn-share" onclick="shareOnX()">Post to X</button>
@@ -601,7 +638,8 @@
         ];
 
         const BACK_RATIO = SIZE_RATIOS[0];
-        const STORAGE_KEY = 'eyesight_solitaire_state_v5'; 
+        // v8に更新
+        const STORAGE_KEY = 'eyesight_solitaire_state_v8'; 
 
         const PATHS = {
             landolt: (() => {
@@ -628,12 +666,13 @@
         // --- タイマー関連変数 ---
         let elapsedSeconds = 0;
         let timerInterval = null;
+        let hasGameStarted = false; // タイマー開始管理用フラグ
         
         // 設定用変数
         let settings = {
             darkMode: false,
-            showRank: false,
-            draw3Mode: true 
+            showRank: true,
+            draw3Mode: false
         };
 
         function initGame() {
@@ -641,9 +680,11 @@
             historyStack = [];
             showResetBtn = false;
             
-            // タイマーリセット & スタート
+            // タイマーリセット (まだスタートしない)
             elapsedSeconds = 0;
-            startTimer();
+            hasGameStarted = false;
+            stopTimer();
+            updateTimerDisplay();
 
             deck = [];
             for (let r=0; r<13; r++) {
@@ -667,11 +708,22 @@
             deck = deck.slice(cardIdx);
             closeResetModal();
             closeClearModal();
+            
+            // 設定適用
+            applySettings();
+            
             saveGame();
             renderBoard();
         }
 
         // --- タイマー機能 ---
+        function tryStartTimer() {
+            if (!hasGameStarted) {
+                hasGameStarted = true;
+                startTimer();
+            }
+        }
+
         function startTimer() {
             stopTimer(); // 重複防止
             updateTimerDisplay(); // 即時反映
@@ -691,7 +743,6 @@
         function updateTimerDisplay() {
             const timeStr = formatTime(elapsedSeconds);
             document.getElementById('timer').innerText = timeStr;
-            // クリア画面のタイムも更新しておく
             document.getElementById('clearTimeDisplay').innerText = timeStr;
         }
 
@@ -714,16 +765,17 @@
         }
         function closeClearModal() { document.getElementById('clearModal').style.display = 'none'; }
 
+        function showWelcomeModal() { document.getElementById('welcomeModal').style.display = 'flex'; }
+        function closeWelcomeModal() { document.getElementById('welcomeModal').style.display = 'none'; }
+
         function shareOnX() {
             const timeStr = formatTime(elapsedSeconds);
-            // 改行には \n を使い、URLパラメータの区切りには & を使います
             const text = `視力検査ソリティア\nTime:${timeStr} #視力検査ソリティア`;
             const url = window.location.href;
-            
-            // textとurlを正しくエンコードして結合します
             const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
             window.open(intent, '_blank');
         } 
+
         function pushHistory() {
             const state = {
                 deck: JSON.parse(JSON.stringify(deck)),
@@ -731,7 +783,8 @@
                 foundations: JSON.parse(JSON.stringify(foundations)),
                 tableau: JSON.parse(JSON.stringify(tableau)),
                 showResetBtn: showResetBtn,
-                elapsedSeconds: elapsedSeconds 
+                elapsedSeconds: elapsedSeconds,
+                hasGameStarted: hasGameStarted
             };
             historyStack.push(state);
             if (historyStack.length > 50) historyStack.shift();
@@ -745,7 +798,8 @@
             foundations = prev.foundations;
             tableau = prev.tableau;
             showResetBtn = prev.showResetBtn || false;
-            // 時間は巻き戻さない
+            
+            // 時間や開始状態は巻き戻さない（操作しているのでタイマーは継続）
             selected = null;
             saveGame();
             renderBoard();
@@ -753,7 +807,7 @@
 
         function saveGame() {
             const data = {
-                deck, waste, foundations, tableau, historyStack, settings, showResetBtn, elapsedSeconds
+                deck, waste, foundations, tableau, historyStack, settings, showResetBtn, elapsedSeconds, hasGameStarted
             };
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -772,12 +826,20 @@
                     historyStack = parsed.historyStack || [];
                     showResetBtn = parsed.showResetBtn || false;
                     
-                    // 時間の復元
                     elapsedSeconds = parsed.elapsedSeconds || 0;
+                    
+                    // ゲーム途中ならタイマー再開、そうでなければ待機
+                    if (parsed.hasGameStarted || elapsedSeconds > 0) {
+                        hasGameStarted = true;
+                    } else {
+                        hasGameStarted = false;
+                    }
                     
                     if(parsed.settings) {
                         settings = parsed.settings;
-                        if (settings.draw3Mode === undefined) settings.draw3Mode = true;
+                        if (settings.darkMode === undefined) settings.darkMode = false;
+                        if (settings.showRank === undefined) settings.showRank = true;
+                        if (settings.draw3Mode === undefined) settings.draw3Mode = false;
                         applySettings();
                     }
                     return true;
@@ -874,6 +936,7 @@
                 showResetBtn = false; 
                 const dummy = createCardEl({rank:0, angle:0, faceUp:false});
                 dummy.classList.add('static-pos'); 
+                // カードクリックでタイマー開始チェック
                 dummy.onclick = dealCard;
                 stockEl.appendChild(dummy);
                 
@@ -891,6 +954,7 @@
                     };
                     stockEl.innerHTML = ''; 
                 } else {
+                    // 山札補充クリックでタイマー開始チェック
                     stockEl.onclick = recycleWaste;
                     stockEl.innerHTML = '<div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:4vmin;color:#777;cursor:pointer;">↺</div>';
                 }
@@ -941,6 +1005,8 @@
                     el.style.top = '0';
                     el.onclick = (e) => {
                         e.stopPropagation();
+                        // ここでもタイマー開始判定
+                        tryStartTimer();
                         if (selected && selected.card.id !== top.id) {
                             handleTargetClick({ type:'foundation', fIdx:i });
                         } else {
@@ -949,7 +1015,7 @@
                     };
                     slot.appendChild(el);
                 }
-                slot.onclick = () => handleTargetClick({ type:'foundation', fIdx:i });
+                slot.onclick = () => { tryStartTimer(); handleTargetClick({ type:'foundation', fIdx:i }); };
                 fContainer.appendChild(slot);
             });
 
@@ -960,7 +1026,7 @@
                 if (col.length === 0) {
                     const empty = document.createElement('div');
                     empty.className = 'empty-col-zone';
-                    empty.onclick = () => handleTargetClick({ type:'tableau', cIdx:cIdx, rIdx:-1 });
+                    empty.onclick = () => { tryStartTimer(); handleTargetClick({ type:'tableau', cIdx:cIdx, rIdx:-1 }); };
                     colEl.appendChild(empty);
                 } else {
                     col.forEach((card, rIdx) => {
@@ -970,6 +1036,7 @@
                         if (card.faceUp) {
                             el.onclick = (e) => {
                                 e.stopPropagation();
+                                tryStartTimer(); // ここも
                                 if (selected && selected.card.id !== card.id) handleTargetClick({ type:'tableau', cIdx, rIdx, card });
                                 else handleCardClick({ type:'tableau', cIdx, rIdx, card });
                             };
@@ -987,6 +1054,7 @@
         window.addEventListener('resize', renderBoard);
 
         function dealCard() {
+            tryStartTimer(); // タイマー開始
             if (deck.length===0) return;
             pushHistory();
             
@@ -1004,6 +1072,7 @@
         }
 
         function recycleWaste() {
+            tryStartTimer(); // タイマー開始
             if (deck.length>0 || waste.length===0) return;
             pushHistory();
             while(waste.length>0) { const c=waste.pop(); c.faceUp=false; deck.push(c); }
@@ -1012,7 +1081,9 @@
             saveGame();
             renderBoard();
         }
+
         function handleCardClick(info) {
+            tryStartTimer(); // タイマー開始
             if (selected && selected.card.id === info.card.id) {
                 selected=null; renderBoard(); return;
             }
@@ -1024,7 +1095,9 @@
             selected = { ...info, stack: stack };
             renderBoard();
         }
+
         function handleTargetClick(tInfo) {
+            tryStartTimer(); // タイマー開始
             if (!selected) return;
             const head = selected.stack[0]; let success=false;
             if (tInfo.type==='foundation' && selected.stack.length===1) {
@@ -1046,6 +1119,7 @@
             }
             if (success) { selected=null; renderBoard(); }
         }
+
         function executeMove(destType, destIdx) {
             pushHistory();
             let items=[];
@@ -1063,6 +1137,7 @@
             else if(destType==='tableau') tableau[destIdx].push(...items);
             saveGame();
         }
+
         function checkWin() {
             let count=0; for(let f of foundations) if(f.length===13) count++;
             if(count===4) {
@@ -1076,15 +1151,18 @@
         function showOption() { document.getElementById('optionModal').style.display = 'flex'; }
         function closeOption() { document.getElementById('optionModal').style.display = 'none'; }
 
-        // 初期化
+        // 初期化処理（一番最後）
         if (!loadGame()) {
             initGame();
+            showWelcomeModal(); 
         } else {
-            // ロードできた場合もタイマーを再開
-            startTimer();
+            // ロードできた場合
+            // すでにゲーム開始済み(=時間が進んでいる)ならタイマー再開
+            if (hasGameStarted) {
+                startTimer();
+            }
             renderBoard();
         }
     </script>
 </body>
 </html>
-
