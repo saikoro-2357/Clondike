@@ -620,8 +620,8 @@
                     <h3>RULES</h3>
                     <ul>
                         <li><strong>目的：</strong> 上部の組札エリアに全ての環を集めればクリアです</li>
-                        <li><strong>場札：</strong> 同じ向きで2.0の環から0.1の環の順に重ねます</li>
-                        <li><strong>組札：</strong> サイズが1つ小さくて向きが90度違う環を重ねられます</li>
+                        <li><strong>組札：</strong> 同じ向きで2.0の環から0.1の環の順に重ねます</li>
+                        <li><strong>場札：</strong> サイズが1つ小さくて向きが90度違う環を重ねられます</li>
                         <li><strong>空列：</strong>  0.1の環のみ配置することが出来ます</li>
                     </ul>
                 </div>
@@ -1160,7 +1160,12 @@
             tryStartTimer(); // タイマー開始
             if (deck.length>0 || waste.length===0) return;
             pushHistory();
-            while(waste.length>0) { const c=waste.pop(); c.faceUp=false; deck.push(c); }
+
+            // 修正: wasteを反転させてからdeckに結合する（順序維持）
+            waste.forEach(c => c.faceUp = false);
+            deck = waste.reverse();
+            waste = [];
+
             selected=null;
             showResetBtn = false; 
             saveGame();
@@ -1255,4 +1260,3 @@
     </script>
 </body>
 </html>
-
