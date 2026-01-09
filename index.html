@@ -369,12 +369,27 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             color: var(--text-color);
             text-align: center;
+            /* モバイルで縦長になったときスクロールできるように */
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-content h2 { 
             margin-top: 0; font-size: 2.8vmin; 
             border-bottom: 1px solid var(--border-color); 
             padding-bottom: 1.5vmin; margin-bottom: 2vmin;
         }
+        
+        /* 新設: モーダル内の小見出し */
+        .modal-content h3 {
+            font-size: 2.2vmin;
+            margin: 2.5vmin 0 1vmin;
+            text-align: left;
+            color: var(--highlight-color);
+            font-weight: bold;
+            border-left: 0.8vmin solid var(--highlight-color);
+            padding-left: 1.5vmin;
+        }
+
         .modal-content p { font-size: 2vmin; margin-bottom: 3vmin; }
 
         /* 設定用リスト */
@@ -385,6 +400,7 @@
         .settings-list ul { 
             padding-left: 2.5vmin; font-size: 1.6vmin; 
             line-height: 2; color: var(--sub-text-color); 
+            margin-top: 0;
         }
 
         /* スイッチ行 */
@@ -485,6 +501,7 @@
             .settings-list ul { font-size: 3.5vmin; }
             .modal-close { font-size: 3.5vmin; }
             .modal-content h2 { font-size: 4.5vmin; }
+            .modal-content h3 { font-size: 3.8vmin; margin-top:3vmin; }
             .modal-content p { font-size: 3.5vmin; }
             
             .rank-number { font-size: 3.0vmin; }
@@ -544,7 +561,16 @@
             <div class="modal-content">
                 <h2>視力検査ソリティア</h2>
                 <div class="settings-list" style="text-align:left;">
-                    <p style="text-align:center; font-weight:bold; margin-bottom:2vmin; color:var(--text-color);">やってると眼がおかしくなるゲーム</p>
+                    <p style="text-align:center; font-weight:bold; margin-bottom:2vmin; color:var(--text-color);">やってると眼がおかしくなるソリティア</p>
+                    
+                    <h3>HOW TO PLAY</h3>
+                    <ul>
+                        <li><strong>選択：</strong> 環をタップで選択・解除</li>
+                        <li><strong>移動：</strong> 選択状態で移動先をタップ</li>
+                        <li>※どれが選択状態かは気合で見つけてください</li>
+                    </ul>
+
+                    <h3>RULES</h3>
                     <ul>
                         <li><strong>目的：</strong> 上部の組札エリアに全ての環を集めればクリアです</li>
                         <li><strong>組札：</strong> 同じ向きで2.0の環から0.1の環の順に重ねます</li>
@@ -584,7 +610,14 @@
                         </label>
                     </div>
 
-                    <h2>RULES</h2>
+                    <h3>HOW TO PLAY</h3>
+                    <ul>
+                        <li><strong>選択：</strong> 環をタップで選択・解除</li>
+                        <li><strong>移動：</strong> 選択状態で移動先をタップ</li>
+                        <li>※どれが選択状態かは気合で見つけてください</li>
+                    </ul>
+
+                    <h3>RULES</h3>
                     <ul>
                         <li><strong>目的：</strong> 上部の組札エリアに全ての環を集めればクリアです</li>
                         <li><strong>場札：</strong> 同じ向きで2.0の環から0.1の環の順に重ねます</li>
@@ -675,6 +708,9 @@
             draw3Mode: false
         };
 
+        // --- オーディオコンテキスト ---
+        let audioCtx = null;
+
         function initGame() {
             selected = null;
             historyStack = [];
@@ -716,11 +752,51 @@
             renderBoard();
         }
 
+        // --- 音を鳴らす関数 ---
+        function playMoveSound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // コンテキストがサスペンド状態なら再開（ユーザー操作が必要）
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                // ピッという高めの短い音
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime); // 1000Hz
+                
+                // エンベロープ（音量の変化）
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } catch (e) {
+                // AudioContextがサポートされていない環境などでのエラー抑制
+                console.log("Audio play failed", e);
+            }
+        }
+
         // --- タイマー機能 ---
         function tryStartTimer() {
             if (!hasGameStarted) {
                 hasGameStarted = true;
                 startTimer();
+                // 最初の操作時にAudioContextを起こす
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch(e){}
+                }
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             }
         }
 
@@ -766,7 +842,16 @@
         function closeClearModal() { document.getElementById('clearModal').style.display = 'none'; }
 
         function showWelcomeModal() { document.getElementById('welcomeModal').style.display = 'flex'; }
-        function closeWelcomeModal() { document.getElementById('welcomeModal').style.display = 'none'; }
+        function closeWelcomeModal() { 
+            document.getElementById('welcomeModal').style.display = 'none'; 
+            // ゲーム開始クリック時にAudioContext作成
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch(e){}
+            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
 
         function shareOnX() {
             const timeStr = formatTime(elapsedSeconds);
@@ -1135,6 +1220,10 @@
             
             if(destType==='foundation') foundations[destIdx].push(...items);
             else if(destType==='tableau') tableau[destIdx].push(...items);
+            
+            // --- 追加: 移動音を鳴らす ---
+            playMoveSound();
+
             saveGame();
         }
 
